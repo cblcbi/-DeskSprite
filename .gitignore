@@ -1,0 +1,27 @@
+# 密钥与本地状态
+.env
+*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# 日志
+logs/
+*.log
+
+# 历史 / 设置（运行时生成）
+history.json
+settings.json
+
+# 第三方源码包（误放进项目的 edge-tts 源码）
+services/edge-tts-*/
+
+# IDE
+.vscode/
+.idea/
+*.swp
