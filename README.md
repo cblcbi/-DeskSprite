@@ -62,6 +62,13 @@ python main.py
 
 **AI 人设**：设置 → AI 人设，可选「默认暖友」「毒舌损友」，或自定义写一段人设文本。
 
+## 打包成 exe（可选）
+
+不需要装 Python 也能运行：在装好全部依赖的机器上执行 `build_exe.bat`（自动安装 PyInstaller 并打包），产物为 `dist\DeskSprite.exe`，双击即启动。
+
+- 打包后 `settings.json` / `history.json` / `.env` 都存放在 exe 所在目录（首次运行前把 `.env.example` 复制为 `.env` 填入密钥）
+- exe 体积较大（含 faster-whisper 识别引擎，数百 MB），启动稍慢属正常
+
 ## 项目结构
 
 ```

@@ -17,8 +17,8 @@ import pyautogui
 
 from utils import persistence
 from utils.hotkeys import canonicalize, display
+from utils.paths import BASE_DIR
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ENV_FILE = os.path.join(BASE_DIR, ".env")
 
 # Tk keysym → 快捷键规范名（pynput 风格小写）

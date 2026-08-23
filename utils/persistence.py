@@ -9,7 +9,8 @@ import json
 import os
 import threading
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from utils.paths import BASE_DIR
+
 SETTINGS_FILE = os.path.join(BASE_DIR, "settings.json")
 HISTORY_FILE = os.path.join(BASE_DIR, "history.json")
 
