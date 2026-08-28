@@ -9,6 +9,7 @@ __pycache__/
 .eggs/
 build/
 dist/
+*.spec
 
 # 日志
 logs/
