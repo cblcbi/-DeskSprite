@@ -42,6 +42,13 @@ _KEYSYM_TO_MOD = {
     "win_l": "win", "win_r": "win",
 }
 
+# Whisper 模型预设：auto=自动发现 models/；模型名=本地没有时联网下载；也可手输路径
+WHISPER_OPTIONS = [
+    "auto",
+    "tiny", "base", "small", "medium",
+    "large-v2", "large-v3", "large-v3-turbo", "turbo",
+]
+
 
 def _keysym_to_hotkey(ks: str) -> str:
     """Tk keysym → 快捷键规范名；F21-F24 与 pynput 不对齐，忽略"""
@@ -210,6 +217,15 @@ class SettingsWindow:
         style.configure("TFrame", background=bg)
         style.configure("Vertical.TScrollbar", background="#313244", troughcolor=bg,
                         bordercolor=bg, lightcolor=bg, darkcolor=bg, arrowcolor=fg)
+        style.configure("TCombobox", fieldbackground="#313244", background="#313244",
+                        foreground=fg, arrowcolor=fg, bordercolor=bg, lightcolor=bg, darkcolor=bg)
+        style.map("TCombobox", fieldbackground=[("readonly", "#313244")],
+                  foreground=[("readonly", fg)])
+        # 下拉列表颜色（option database，clam 主题的 Listbox 由它控制）
+        self._win.option_add("*TCombobox*Listbox*Background", "#313244")
+        self._win.option_add("*TCombobox*Listbox*Foreground", fg)
+        self._win.option_add("*TCombobox*Listbox*selectBackground", accent)
+        self._win.option_add("*TCombobox*Listbox*selectForeground", "#1e1e2e")
 
         nb = ttk.Notebook(container)
         nb.pack(fill="both", expand=True)
@@ -227,7 +243,8 @@ class SettingsWindow:
             ("QWEN_API_KEY", "DashScope 密钥（可选）", True),
         ])
         gen_tab = self._add_entry_tab(nb, "通用", [
-            ("WHISPER_MODEL_PATH", "Whisper 模型路径"),
+            ("WHISPER_MODEL_PATH", "Whisper 模型（auto=自动发现 models/，模型名=联网下载，也可手输路径）",
+             False, WHISPER_OPTIONS),
             ("WHISPER_DEVICE", "Whisper 设备"),
             ("WHISPER_COMPUTE", "Whisper 精度"),
             ("MAX_TOKENS", "最大 token"),
@@ -280,14 +297,21 @@ class SettingsWindow:
         sc.pack(fill="both", expand=True)
         inner = sc.inner
         for key, label, *rest in fields:
-            is_secret = rest and rest[0]
+            is_secret = rest[0] if rest else False
+            options = rest[1] if len(rest) > 1 else None
             shadow_label(inner, label, bg, fg, ("Microsoft YaHei", 10),
                          anchor="w", pady=(5, 1))
             var = tk.StringVar()
-            entry = tk.Entry(inner, textvariable=var, bg="#313244", fg=fg,
-                              insertbackground=fg, relief="flat", font=("Microsoft YaHei", 11),
-                              show="*" if is_secret else "")
-            entry.pack(fill="x", ipady=2)
+            if options:
+                # 可编辑下拉：预设一键可选，也允许手输任意路径
+                combo = ttk.Combobox(inner, textvariable=var, values=options,
+                                     state="normal", font=("Microsoft YaHei", 10))
+                combo.pack(fill="x", ipady=2)
+            else:
+                entry = tk.Entry(inner, textvariable=var, bg="#313244", fg=fg,
+                                  insertbackground=fg, relief="flat", font=("Microsoft YaHei", 11),
+                                  show="*" if is_secret else "")
+                entry.pack(fill="x", ipady=2)
             self._vars[key] = var
         if extra_checkbox:
             key, label = extra_checkbox
