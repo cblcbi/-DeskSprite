@@ -49,7 +49,7 @@ class Config:
 
     # ---------- 模型配置 ----------
     GG_MODEL = _get("GG_MODEL", "gemini-3-flash-preview")
-    GG_BASE_URL = _get("GG_BASE_URL", "https://gcli.ggchan.dev/v1")
+    GG_BASE_URL = _get("GG_BASE_URL", "https://api.openai.com/v1")
     TTS_MODEL = _get("TTS_MODEL", "qwen3-tts-flash")
     TTS_VOICE = _get("TTS_VOICE", "Bella")
     TTS_BACKEND = _get("TTS_BACKEND", "edge")  # edge | dashscope

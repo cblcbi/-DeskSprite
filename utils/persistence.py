@@ -21,7 +21,7 @@ _lock = threading.Lock()
 
 DEFAULT_SETTINGS = {
     "GG_MODEL": "gemini-3-flash-preview",
-    "GG_BASE_URL": "https://gcli.ggchan.dev/v1",
+    "GG_BASE_URL": "https://api.openai.com/v1",
     "TTS_BACKEND": "edge",
     "TTS_EDGE_VOICE": "zh-CN-XiaoxiaoNeural",
     "TTS_MODEL": "qwen3-tts-flash",
