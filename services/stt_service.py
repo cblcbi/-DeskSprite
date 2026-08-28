@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """封装 Whisper 语音识别（STT）"""
 
-import glob
 import logging
 import os
 import tempfile
@@ -10,37 +9,9 @@ import wave
 
 from faster_whisper import WhisperModel
 
-from utils.paths import BASE_DIR
+from utils.whisper_models import resolve_model_source
 
 logger = logging.getLogger(__name__)
-
-# 常见官方模型名（这些值交给 faster-whisper 处理，本地不存在时联网下载）
-_MODEL_NAMES = {
-    "tiny", "tiny.en", "base", "base.en", "small", "small.en",
-    "medium", "medium.en", "large", "large-v1", "large-v2", "large-v3",
-    "large-v3-turbo", "turbo", "distil-large-v2", "distil-large-v3",
-}
-
-
-def _is_model_name(path: str) -> bool:
-    """纯模型名（无路径分隔符且不在磁盘上）→ 交给 faster-whisper 联网下载"""
-    if not path or ("/" in path) or ("\\" in path):
-        return False
-    if os.path.isdir(path):
-        return False
-    return path.lower() in _MODEL_NAMES
-
-
-def _is_local_model_dir(path: str) -> bool:
-    """本地模型目录：存在且含 model.bin"""
-    return bool(path) and os.path.isdir(path) and os.path.isfile(os.path.join(path, "model.bin"))
-
-
-def _discover_local_models():
-    """自动发现应用目录 models/ 下的本地模型（model.bin 大的优先=更精准）"""
-    found = glob.glob(os.path.join(BASE_DIR, "models", "*", "model.bin"))
-    found.sort(key=lambda p: os.path.getsize(p), reverse=True)
-    return [os.path.dirname(p) for p in found]
 
 
 class STTService:
@@ -48,21 +19,8 @@ class STTService:
         self.config = config
         self.model = None
 
-        # 模型来源：配置值有效直接用；无效则自动发现应用目录 models/ 下的模型
-        path = config.WHISPER_MODEL_PATH
-        if _is_local_model_dir(path):
-            logger.info("📁 使用配置的本地模型: %s", path)
-        elif _is_model_name(path):
-            logger.info("📁 使用模型名: %s（本地不存在时自动下载）", path)
-        else:
-            discovered = _discover_local_models()
-            if discovered:
-                path = discovered[0]
-                logger.info("🔍 配置的模型无效，自动发现本地模型: %s", path)
-            else:
-                logger.warning("⚠️ 配置的模型路径无效且 models/ 下未发现模型，尝试按模型名下载: %s",
-                               path or "small")
-                path = path if _is_model_name(path) else "small"
+        # 模型来源：路径优先 → 模型名/auto 自动发现
+        path = resolve_model_source(config)
 
         # 加载尝试链：优先用户配置的设备；CUDA 不可用（无 N 卡/驱动问题）自动降级 CPU
         attempts = [(config.WHISPER_DEVICE, config.WHISPER_COMPUTE)]

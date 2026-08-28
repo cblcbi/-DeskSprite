@@ -26,7 +26,8 @@ DEFAULT_SETTINGS = {
     "TTS_EDGE_VOICE": "zh-CN-XiaoxiaoNeural",
     "TTS_MODEL": "qwen3-tts-flash",
     "TTS_VOICE": "Bella",
-    "WHISPER_MODEL_PATH": "small",  # 模型大小名（自动下载）或本地路径
+    "WHISPER_MODEL": "auto",            # 模型选择（auto=自动检测，或模型名）
+    "WHISPER_MODEL_PATH": "",           # 本地模型目录（留空=纯 auto 检测）
     "WHISPER_DEVICE": "cuda",
     "WHISPER_COMPUTE": "float16",
     "MAX_TOKENS": 8192,

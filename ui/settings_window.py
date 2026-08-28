@@ -179,6 +179,8 @@ class SettingsWindow:
         self._vars = {}
         self._check_vars = {}
         self._hotkey_labels = {}
+        self._combo_widgets = {}   # key -> ttk.Combobox（模型选择等下拉）
+        self._entry_widgets = {}   # key -> tk.Entry（用于路径联动检测）
         self._rec_key = None  # 正在录制的快捷键键名
         self._build_ui()
         self._load_current()
@@ -243,8 +245,9 @@ class SettingsWindow:
             ("QWEN_API_KEY", "DashScope 密钥（可选）", True),
         ])
         gen_tab = self._add_entry_tab(nb, "通用", [
-            ("WHISPER_MODEL_PATH", "Whisper 模型（auto=自动发现 models/，模型名=联网下载，也可手输路径）",
+            ("WHISPER_MODEL", "Whisper 模型（auto=自动检测 exe 目录/models，或选预设）",
              False, WHISPER_OPTIONS),
+            ("WHISPER_MODEL_PATH", "Whisper 模型路径（留空=自动检测；填路径自动识别模型）"),
             ("WHISPER_DEVICE", "Whisper 设备"),
             ("WHISPER_COMPUTE", "Whisper 精度"),
             ("MAX_TOKENS", "最大 token"),
@@ -261,6 +264,11 @@ class SettingsWindow:
                        font=("Microsoft YaHei", 10),
                        ).pack(anchor="w", pady=(6, 0))
         self._add_hotkey_section(gen_tab)
+
+        # Whisper 路径输入时实时检测模型并联动下拉
+        path_entry = self._entry_widgets.get("WHISPER_MODEL_PATH")
+        if path_entry is not None:
+            path_entry.bind("<KeyRelease>", lambda e: self._sync_model_detection())
 
         # 历史编辑 tab
         hist_tab = tk.Frame(nb, bg=bg, padx=12, pady=12)
@@ -307,11 +315,13 @@ class SettingsWindow:
                 combo = ttk.Combobox(inner, textvariable=var, values=options,
                                      state="normal", font=("Microsoft YaHei", 10))
                 combo.pack(fill="x", ipady=2)
+                self._combo_widgets[key] = combo
             else:
                 entry = tk.Entry(inner, textvariable=var, bg="#313244", fg=fg,
                                   insertbackground=fg, relief="flat", font=("Microsoft YaHei", 11),
                                   show="*" if is_secret else "")
                 entry.pack(fill="x", ipady=2)
+                self._entry_widgets[key] = entry
             self._vars[key] = var
         if extra_checkbox:
             key, label = extra_checkbox
@@ -464,6 +474,29 @@ class SettingsWindow:
         self._persona_text.delete("1.0", tk.END)
         self._persona_text.insert("1.0", getattr(Config, "CUSTOM_SYSTEM_PROMPT", ""))
         self._on_persona_change()
+        # 打开设置时按已配置的路径做一次模型检测联动
+        self._sync_model_detection()
+
+    def _sync_model_detection(self):
+        """Whisper 路径联动：路径里检测到本地模型时，把档位加进下拉并自动选中"""
+        path_var = self._vars.get("WHISPER_MODEL_PATH")
+        combo = self._combo_widgets.get("WHISPER_MODEL")
+        if path_var is None or combo is None:
+            return
+        raw = path_var.get().strip()
+        if not raw:
+            return
+        from utils.paths import BASE_DIR
+        from utils.whisper_models import detect_model_label
+        resolved = raw if os.path.isabs(raw) else os.path.join(BASE_DIR, raw)
+        label = detect_model_label(resolved)
+        if not label:
+            return
+        vals = list(combo.cget("values"))
+        if label not in vals:
+            combo.configure(values=[label] + vals)
+        if combo.get() in ("", "auto"):
+            combo.set(label)
         # 历史显示
         history = persistence.load_history()
         text = "\n".join(f'{h["role"]}: {h["content"]}' for h in history)
