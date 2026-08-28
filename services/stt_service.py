@@ -15,13 +15,21 @@ logger = logging.getLogger(__name__)
 class STTService:
     def __init__(self, config):
         self.config = config
-        logger.info("⏳ 加载语音识别模型 (%s)...", config.WHISPER_DEVICE)
-        self.model = WhisperModel(
-            config.WHISPER_MODEL_PATH,
-            device=config.WHISPER_DEVICE,
-            compute_type=config.WHISPER_COMPUTE,
-        )
-        logger.info("✅ 语音识别模型已加载")
+        self.model = None
+        try:
+            logger.info("⏳ 加载语音识别模型 (%s)...", config.WHISPER_MODEL_PATH)
+            self.model = WhisperModel(
+                config.WHISPER_MODEL_PATH,
+                device=config.WHISPER_DEVICE,
+                compute_type=config.WHISPER_COMPUTE,
+            )
+            logger.info("✅ 语音识别模型已加载")
+        except Exception as e:
+            # 模型缺失/网络下载失败时不崩溃：语音转写降级不可用，程序照常运行
+            logger.error(
+                "❌ 语音识别模型加载失败（语音对话将不可用，打字聊天不受影响）: %s\n"
+                "   请检查 WHISPER_MODEL_PATH（本地模型目录）或网络后重启。", e,
+            )
 
         # 过滤 whisper 幻觉文本（常见字幕残留）
         self.hallucination_filters = [
@@ -37,7 +45,10 @@ class STTService:
         ]
 
     def transcribe(self, audio_data: bytes) -> str:
-        """把 PCM16 音频转写为文本；过短/无内容返回空串"""
+        """把 PCM16 音频转写为文本；模型不可用时返回空串"""
+        if self.model is None:
+            logger.warning("⚠️ 语音识别模型不可用，跳过转写")
+            return ""
         tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
         tmp_path = tmp.name
         tmp.close()
