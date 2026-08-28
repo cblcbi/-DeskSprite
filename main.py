@@ -16,6 +16,7 @@ from services.llm_client import LLMClient
 from services.stt_service import STTService
 from services.tts_service import TTSService
 from ui.gui_manager import GUIManager
+from ui.tray import TrayIcon
 from utils.audio_utils import AudioEngine
 from utils.hotkeys import display as hk_display
 from utils.logger import setup_logging
@@ -68,6 +69,13 @@ def main():
     orchestrator.start_keyboard_listener()
     orchestrator.start_roast_loop()
     orchestrator.start_worker()
+
+    # 系统托盘（右键退出/打开设置）——程序没有主窗口，靠它正常关闭
+    tray = TrayIcon(
+        on_quit=lambda: gui.root.after(0, gui.root.quit),
+        on_settings=gui.open_settings,
+    )
+    tray.start()
 
     # 主线程进入 GUI 事件循环
     try:
