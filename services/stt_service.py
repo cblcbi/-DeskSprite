@@ -16,19 +16,29 @@ class STTService:
     def __init__(self, config):
         self.config = config
         self.model = None
-        try:
-            logger.info("⏳ 加载语音识别模型 (%s)...", config.WHISPER_MODEL_PATH)
-            self.model = WhisperModel(
-                config.WHISPER_MODEL_PATH,
-                device=config.WHISPER_DEVICE,
-                compute_type=config.WHISPER_COMPUTE,
-            )
-            logger.info("✅ 语音识别模型已加载")
-        except Exception as e:
+        # 加载尝试链：优先用户配置的设备；CUDA 不可用（无 N 卡/驱动问题）自动降级 CPU
+        attempts = [(config.WHISPER_DEVICE, config.WHISPER_COMPUTE)]
+        if str(config.WHISPER_DEVICE).lower() != "cpu":
+            attempts.append(("cpu", "int8"))
+        for device, compute in attempts:
+            try:
+                logger.info("⏳ 加载语音识别模型 (%s @ %s/%s)...",
+                            config.WHISPER_MODEL_PATH, device, compute)
+                self.model = WhisperModel(
+                    config.WHISPER_MODEL_PATH,
+                    device=device,
+                    compute_type=compute,
+                )
+                logger.info("✅ 语音识别模型已加载 (%s/%s)", device, compute)
+                break
+            except Exception as e:
+                logger.warning("⚠️ %s/%s 加载失败: %s", device, compute, e)
+                self.model = None
+        if self.model is None:
             # 模型缺失/网络下载失败时不崩溃：语音转写降级不可用，程序照常运行
             logger.error(
-                "❌ 语音识别模型加载失败（语音对话将不可用，打字聊天不受影响）: %s\n"
-                "   请检查 WHISPER_MODEL_PATH（本地模型目录）或网络后重启。", e,
+                "❌ 语音识别模型加载失败（语音对话将不可用，打字聊天不受影响）\n"
+                "   请检查 WHISPER_MODEL_PATH（本地模型目录）或网络后重启。"
             )
 
         # 过滤 whisper 幻觉文本（常见字幕残留）

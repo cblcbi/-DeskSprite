@@ -72,8 +72,14 @@ class Config:
     MIN_RECORD_SECONDS = float(_get("MIN_RECORD_SECONDS", "0.3"))
 
     # ---------- Whisper ----------
-    # 填模型大小名（small/base/medium...，首次自动从 HuggingFace 下载）或本地模型目录
-    WHISPER_MODEL_PATH = _get("WHISPER_MODEL_PATH", "small")
+    # 填模型大小名（small/base/medium...，首次自动从 HuggingFace 下载）或本地模型目录；
+    # 相对路径（如 models/faster-whisper）相对应用目录（exe/项目所在目录）解析，
+    # 方便把模型文件夹和 exe 打包在一起分发
+    _whisper_raw = _get("WHISPER_MODEL_PATH", "small")
+    if _whisper_raw and (("\\" in _whisper_raw) or ("/" in _whisper_raw)) \
+            and not os.path.isabs(_whisper_raw):
+        _whisper_raw = os.path.join(BASE_DIR, _whisper_raw)
+    WHISPER_MODEL_PATH = _whisper_raw
     WHISPER_DEVICE = _get("WHISPER_DEVICE", "cuda")
     WHISPER_COMPUTE = _get("WHISPER_COMPUTE", "float16")
 
